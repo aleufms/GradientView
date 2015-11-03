@@ -16,7 +16,7 @@ public class GradientView: UIView {
 	/// The mode of the gradient.
 	public enum Type {
 		/// A linear gradient.
-		case Linear
+        case Linear(direction: Direction)
 
 		/// A radial gradient.
 		case Radial
@@ -30,6 +30,15 @@ public class GradientView: UIView {
 
 		/// The gradient is horizontal
 		case Horizontal
+        
+        /// The gradient is diogonal beginning from (0,0) to (1,1)
+        case Diagonal_0
+        
+        /// The gradient is diogonal beginning with (1,0) to (0,1)
+        case Diagonal_1
+        
+        // Custom point gradient
+        case Custom(startPoint: CGPoint, endPoint: CGPoint)
 	}
 
 
@@ -72,18 +81,18 @@ public class GradientView: UIView {
 	}
 
 	/// The mode of the gradient. The default is `.Linear`.
-	public var mode: Type = .Linear {
+    public var mode: Type = .Linear(direction: .Vertical) {
 		didSet {
 			setNeedsDisplay()
 		}
 	}
 
-	/// The direction of the gradient. Only valid for the `Mode.Linear` mode. The default is `.Vertical`.
-	public var direction: Direction = .Vertical {
-		didSet {
-			setNeedsDisplay()
-		}
-	}
+//	/// The direction of the gradient. Only valid for the `Mode.Linear` mode. The default is `.Vertical`.
+//	public var direction: Direction = .Vertical {
+//		didSet {
+//			setNeedsDisplay()
+//		}
+//	}
 
 	/// 1px borders will be drawn instead of 1pt borders. The default is `true`.
 	public var drawsThinBorders: Bool = true {
@@ -131,14 +140,39 @@ public class GradientView: UIView {
 		if let gradient = gradient {
             let options: CGGradientDrawingOptions = [.DrawsAfterEndLocation]
 
-			if mode == .Linear {
-				let startPoint = CGPointZero
-				let endPoint = direction == .Vertical ? CGPoint(x: 0, y: size.height) : CGPoint(x: size.width, y: 0)
-				CGContextDrawLinearGradient(context, gradient, startPoint, endPoint, options)
-			} else {
-				let center = CGPoint(x: bounds.midX, y: bounds.midY)
-				CGContextDrawRadialGradient(context, gradient, center, 0, center, min(size.width, size.height) / 2, options)
-			}
+            switch mode{
+            case .Linear(let direction):
+                let startPoint: CGPoint
+                let endPoint: CGPoint
+                
+                switch direction{
+                case .Vertical:
+                    startPoint = CGPointZero
+                    endPoint = CGPoint(x: 0, y: size.height)
+                    
+                case .Horizontal:
+                    startPoint = CGPointZero
+                    endPoint = CGPoint(x: size.width, y: 0)
+                    
+                case .Diagonal_0:
+                    startPoint = CGPointZero
+                    endPoint = CGPoint(x: size.width, y: size.height)
+                    
+                case .Diagonal_1:
+                    startPoint = CGPoint(x: size.width, y: 0)
+                    endPoint = CGPoint(x: 0, y: size.height)
+                    
+                case .Custom(let point):
+                    startPoint = point.startPoint
+                    endPoint = point.endPoint
+                    
+                }
+
+                CGContextDrawLinearGradient(context, gradient, startPoint, endPoint, options)
+            case .Radial:
+                let center = CGPoint(x: bounds.midX, y: bounds.midY)
+                CGContextDrawRadialGradient(context, gradient, center, 0, center, min(size.width, size.height) / 2, options)
+            }
 		}
 
 		let screen: UIScreen = window?.screen ?? UIScreen.mainScreen()
